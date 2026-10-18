@@ -12,6 +12,7 @@ public class DepensesViewModel : BaseViewModel
     private string _libelle = "", _montantTexte = "";
     private bool _isBusy;
     private string _totalConverti = "", _message = "";
+    private string _categorieChoisie = "Autre";
 
     public ObservableCollection<Depense> Depenses { get; } = new();
     public decimal Total => Depenses.Sum(d => d.Montant);
@@ -26,6 +27,15 @@ public class DepensesViewModel : BaseViewModel
     {
         get => _montantTexte;
         set { if (SetField(ref _montantTexte, value)) AjouterCommand.Rafraichir(); }
+    }
+
+    public List<string> Categories { get; } =
+        new() { "Transport", "Repas", "Courses", "Loisirs", "Santé", "Autre" };
+
+    public string CategorieChoisie
+    {
+        get => _categorieChoisie;
+        set => SetField(ref _categorieChoisie, value);
     }
 
     public bool IsBusy
@@ -78,7 +88,7 @@ public class DepensesViewModel : BaseViewModel
     {
         if (!decimal.TryParse(MontantTexte, out decimal m))
             return;
-        var d = new Depense { Libelle = Libelle, Montant = m };
+        var d = new Depense { Libelle = Libelle, Montant = m, Categorie = CategorieChoisie };
         await _repo.AjouterAsync(d);   // 1. on sauvegarde
         Depenses.Add(d);               // 2. on affiche
         OnPropertyChanged(nameof(Total));

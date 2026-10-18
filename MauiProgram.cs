@@ -32,6 +32,17 @@ public static class MauiProgram
 #endif
 		});
 
+		Microsoft.Maui.Handlers.PickerHandler.Mapper.AppendToMapping("SansBordure", (h, v) =>
+		{
+#if WINDOWS
+			h.PlatformView.BorderThickness = new Microsoft.UI.Xaml.Thickness(0);
+			h.PlatformView.Background = null;
+#elif ANDROID
+			h.PlatformView.BackgroundTintList =
+				Android.Content.Res.ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
+#endif
+		});
+
 		builder.Services.AddSingleton<IDepenseRepository, SqliteDepenseRepository>();   // UNE SEULE ligne change
 		// Vraie API plus tard : remplacer new FakeApiHandler() par rien, soit new HttpClient().
 		builder.Services.AddSingleton(new HttpClient(new FakeApiHandler()));
