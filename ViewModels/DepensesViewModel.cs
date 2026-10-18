@@ -119,6 +119,11 @@ public class DepensesViewModel : BaseViewModel
 
     private async Task SupprimerAsync(Depense d)
     {
+        // Confirmation avant suppression définitive.
+        bool ok = await Shell.Current.DisplayAlert("Supprimer la dépense",
+            $"Supprimer « {d.Libelle} » ({d.Montant:N0} FCFA) ?", "Supprimer", "Annuler");
+        if (!ok) return;
+
         await _repo.SupprimerAsync(d);
         Depenses.Remove(d);
         Affichees.Remove(d);
