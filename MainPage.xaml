@@ -76,9 +76,9 @@
                            Text="{Binding MontantTexte}" />
                 </Border>
                 <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Champ}">
-                    <Picker Title="Catégorie" ItemsSource="{Binding Categories}"
+                    <Picker ItemsSource="{Binding Categories}"
                             SelectedItem="{Binding CategorieChoisie}"
-                            TextColor="{AppThemeBinding Light={StaticResource Encre}, Dark={StaticResource EncreSombre}}" TitleColor="#9CA3AF"
+                            TextColor="{AppThemeBinding Light={StaticResource Encre}, Dark={StaticResource EncreSombre}}"
                             BackgroundColor="Transparent" FontSize="15"
                             VerticalOptions="Center" />
                 </Border>
