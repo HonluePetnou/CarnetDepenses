@@ -1,13 +1,17 @@
 using System.Collections.ObjectModel;
 using CarnetDepenses.Models;
 using CarnetDepenses.Services;
+using Microsoft.Maui.Storage;
 
 namespace CarnetDepenses.ViewModels;
 
 public class DepensesViewModel : BaseViewModel
 {
     private readonly IDepenseRepository _repo;
+    private readonly IApiService _api;
     private string _libelle = "", _montantTexte = "";
+    private bool _isBusy;
+    private string _totalConverti = "", _message = "";
 
     public ObservableCollection<Depense> Depenses { get; } = new();
     public decimal Total => Depenses.Sum(d => d.Montant);
@@ -24,19 +28,41 @@ public class DepensesViewModel : BaseViewModel
         set { if (SetField(ref _montantTexte, value)) AjouterCommand.Rafraichir(); }
     }
 
+    public bool IsBusy
+    {
+        get => _isBusy;
+        set { if (SetField(ref _isBusy, value)) ConvertirCommand.Rafraichir(); }
+    }
+
+    public string TotalConverti
+    {
+        get => _totalConverti;
+        set => SetField(ref _totalConverti, value);
+    }
+
+    public string Message
+    {
+        get => _message;
+        set => SetField(ref _message, value);
+    }
+
     public RelayCommand AjouterCommand { get; }
     public RelayCommandP SupprimerCommand { get; }
+    public RelayCommand ConvertirCommand { get; }
 
-    // Le repository est INJECTÉ par le conteneur (voir MauiProgram).
-    public DepensesViewModel(IDepenseRepository repo)
+    // Le repository et le service API sont INJECTÉS par le conteneur (voir MauiProgram).
+    public DepensesViewModel(IDepenseRepository repo, IApiService api)
     {
         _repo = repo;
+        _api = api;
         AjouterCommand = new RelayCommand(
             async () => await AjouterAsync(),
             () => !string.IsNullOrWhiteSpace(Libelle)
                && !string.IsNullOrWhiteSpace(MontantTexte));
         SupprimerCommand = new RelayCommandP(
             async p => await SupprimerAsync((Depense)p!));
+        ConvertirCommand = new RelayCommand(
+            async () => await ConvertirAsync(), () => !IsBusy);
     }
 
     // Relit le stockage et remplit la liste affichée.
@@ -64,5 +90,27 @@ public class DepensesViewModel : BaseViewModel
         await _repo.SupprimerAsync(d);
         Depenses.Remove(d);
         OnPropertyChanged(nameof(Total));
+    }
+
+    private async Task ConvertirAsync()
+    {
+        IsBusy = true; Message = "";
+        try
+        {
+            var t = await _api.GetTauxAsync();             // appel réseau
+            Preferences.Set("taux_eur", (double)t.Taux["EUR"]);   // cache
+            TotalConverti = $"{Total * t.Taux["EUR"]:F2} EUR";
+        }
+        catch (HttpRequestException)                       // réseau coupé
+        {
+            double c = Preferences.Get("taux_eur", 0.0);
+            if (c == 0) Message = "Hors ligne, pas de taux.";
+            else
+            {
+                TotalConverti = $"{Total * (decimal)c:F2} EUR (cache)";
+                Message = "Hors ligne : dernier taux connu.";
+            }
+        }
+        finally { IsBusy = false; }                        // exécuté TOUJOURS
     }
 }

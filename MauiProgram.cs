@@ -22,6 +22,9 @@ public static class MauiProgram
 #endif
 
 		builder.Services.AddSingleton<IDepenseRepository, JsonDepenseRepository>();
+		// Vraie API plus tard : remplacer new FakeApiHandler() par rien, soit new HttpClient().
+		builder.Services.AddSingleton(new HttpClient(new FakeApiHandler()));
+		builder.Services.AddSingleton<IApiService, ApiService>();
 		builder.Services.AddSingleton<DepensesViewModel>();
 		builder.Services.AddSingleton<MainPage>();
 
