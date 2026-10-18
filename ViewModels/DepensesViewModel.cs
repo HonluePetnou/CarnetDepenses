@@ -13,9 +13,19 @@ public class DepensesViewModel : BaseViewModel
     private bool _isBusy;
     private string _totalConverti = "", _message = "";
     private string _categorieChoisie = "Autre";
+    private string _filtre = "";
 
     public ObservableCollection<Depense> Depenses { get; } = new();
     public decimal Total => Depenses.Sum(d => d.Montant);
+
+    // Ce que la liste affiche : Depenses filtrées par la recherche.
+    public ObservableCollection<Depense> Affichees { get; } = new();
+
+    public string Filtre
+    {
+        get => _filtre;
+        set { if (SetField(ref _filtre, value)) AppliquerFiltre(); }
+    }
 
     public string Libelle
     {
@@ -81,7 +91,18 @@ public class DepensesViewModel : BaseViewModel
         Depenses.Clear();
         foreach (var d in await _repo.ListerAsync())
             Depenses.Add(d);
+        AppliquerFiltre();
         OnPropertyChanged(nameof(Total));
+    }
+
+    private void AppliquerFiltre()
+    {
+        Affichees.Clear();
+        foreach (var d in Depenses)
+            if (string.IsNullOrWhiteSpace(Filtre)
+                || d.Libelle.Contains(Filtre, StringComparison.OrdinalIgnoreCase)
+                || d.Categorie.Contains(Filtre, StringComparison.OrdinalIgnoreCase))
+                Affichees.Add(d);
     }
 
     private async Task AjouterAsync()
@@ -91,6 +112,7 @@ public class DepensesViewModel : BaseViewModel
         var d = new Depense { Libelle = Libelle, Montant = m, Categorie = CategorieChoisie };
         await _repo.AjouterAsync(d);   // 1. on sauvegarde
         Depenses.Add(d);               // 2. on affiche
+        AppliquerFiltre();
         OnPropertyChanged(nameof(Total));
         Libelle = ""; MontantTexte = "";
     }
@@ -99,6 +121,7 @@ public class DepensesViewModel : BaseViewModel
     {
         await _repo.SupprimerAsync(d);
         Depenses.Remove(d);
+        Affichees.Remove(d);
         OnPropertyChanged(nameof(Total));
     }
 
